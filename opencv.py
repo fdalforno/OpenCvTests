@@ -1,6 +1,6 @@
 import cv2
 import sys
-import glob
+import os
 import numpy as np
 import math
 
@@ -48,6 +48,8 @@ def rescale(image, width=None, height=None, inter=cv2.INTER_AREA):
 
     return resized
 
+def image_list(path):
+    return [os.path.join(path, f) for f in os.listdir(path) if f.endswith('.jpg') or f.endswith('.png')]
 
 def open_document(image, doc_height):
     """
@@ -138,6 +140,15 @@ class ContourInfo(object):
 
         tangent = svd_u[:, 0].flatten().copy()
 
+        print("svd_u")
+        print(svd_u)
+        print("svd_u[:, 0]")
+        print(svd_u[:, 0])
+        print("svd_u[:, 0].flatten()")
+        print(svd_u[:, 0].flatten())
+        print("svd_u[:, 0].flatten().copy()")
+        print(svd_u[:, 0].flatten().copy())
+
         self.angle = np.arctan2(tangent[1], tangent[0])
 
 
@@ -145,14 +156,14 @@ class ContourInfo(object):
         cv2.drawContours(image, self.contour, -1, (0, 255, 0), 3)
 
     def draw_orientation(self, image):
-        length = 20
+        length = 30
         cv2.circle(image, (int(self.x), int(self.y)), 3, (0, 0, 255), -1)
         x1 = self.x + length * math.cos(self.angle)
         y1 = self.y + length * math.sin(self.angle)
 
         #print(math.degrees(self.angle))
 
-        cv2.arrowedLine(image,(int(self.x), int(self.y)),(int(x1), int(y1)),(0, 0, 255))
+        cv2.arrowedLine(image,(int(self.x), int(self.y)),(int(x1), int(y1)),(0, 0, 255),3)
 
     def angleDiff(self,angleB,angleA):
         return abs(angleB - angleA)
