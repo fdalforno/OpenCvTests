@@ -14,6 +14,11 @@ TEXT_MIN_HEIGHT = 2  # min reduced px height of detected text contour
 TEXT_MIN_ASPECT = 1.5  # filter out text contours below this w/h ratio
 TEXT_MAX_THICKNESS = 10  # max reduced px thickness of detected text contour
 
+numberChain = 0
+
+
+
+
 
 
 
@@ -27,7 +32,7 @@ def rescale(image, width=None, height=None, inter=cv2.INTER_AREA):
     :param width: larghezza immagine
     :param height: altezza
     :param inter: metodo scalatura
-    :return: 
+    :return:
     """
     dim = None
     (h, w) = image.shape[:2]
@@ -60,6 +65,11 @@ def open_document(image, doc_height):
     :return:
     """
     gray = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
+
+    if gray is None:
+        print("document ", image, " doesn't exists")
+        sys.exit()
+
     height, width = gray.shape[:2]
     print("image size", width, "x", height)
 
@@ -100,6 +110,9 @@ def get_page_extents(image):
 def box(width, height):
     return np.ones((height, width), dtype=np.uint8)
 
+def get_binary(image, pagemask,maxVal = 255):
+    mask = cv2.adaptiveThreshold(image, maxVal, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, ADAPTIVE_WINSZ, 7)
+    return np.minimum(mask, pagemask)
 
 def get_mask(image, pagemask, maxVal=255, masktype='block'):
     mask = None
@@ -139,16 +152,6 @@ class ContourInfo(object):
         _, svd_u, _ = cv2.SVDecomp(moments_matrix)
 
         tangent = svd_u[:, 0].flatten().copy()
-
-        print("svd_u")
-        print(svd_u)
-        print("svd_u[:, 0]")
-        print(svd_u[:, 0])
-        print("svd_u[:, 0].flatten()")
-        print(svd_u[:, 0].flatten())
-        print("svd_u[:, 0].flatten().copy()")
-        print(svd_u[:, 0].flatten().copy())
-
         self.angle = np.arctan2(tangent[1], tangent[0])
 
 
@@ -186,6 +189,30 @@ class ContourInfo(object):
         overallAngle = np.arctan2(delta_y,delta_x)
         delta_angle = max(self.angleDiff(cInfoA.angle,overallAngle),self.angleDiff(cInfoB.angle,overallAngle))
 
+
+
+def detect_box(image,pagemask, masktype):
+
+    blur = cv2.GaussianBlur(image, (5, 5), 0)
+    retval, threshold = cv2.threshold(blur, 200, 255, cv2.THRESH_BINARY_INV)
+
+    print(retval)
+
+    params = cv2.SimpleBlobDetector_Params()
+
+    params.minThreshold = 10
+    params.maxThreshold = 200
+
+    detector = cv2.SimpleBlobDetector_create(params)
+
+    keypoints = detector.detect(threshold)
+
+    im_with_keypoints = cv2.drawKeypoints(image, keypoints, np.array([]), (0, 0, 255),cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+
+    cv2.imshow("Keypoints", im_with_keypoints)
+    cv2.waitKey(0)
+
+    return []
 
 
 
@@ -241,8 +268,8 @@ def deskew(image,contours,m):
 def openMatchImage(image):
     """
     apro l'immagine con cui fare il matching
-    :param image: 
-    :return: 
+    :param image:
+    :return:
     """
     gray = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
     height, width = gray.shape[:2]
